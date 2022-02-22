@@ -1,16 +1,21 @@
-# wordle
+# Wordle
 
-A new Flutter project.
+Copia del famoso juego **WORDLE** en dart usando Flutter.
 
-## Getting Started
+## Reglas
+- Las palabras solo se pueden escribir en minusculas
+- Al finalizar la palabra tienes que darle enter de tu teclado para comprobar la palabra
 
-This project is a starting point for a Flutter application.
+## Probar el proyecto en local
+### Requisitos previos
+- Tener Android Studio instalado con su correspondiente emulador activo y Android SDK
+- Instalar Flutter SDK
+- Algun IDE como **Android Studio** o **Visual Studio Code**
+## Compilar el proyecto
+Actualmente se puede compilar para 3 plataformas (Desde un ordenador con windows):
+- Android
+- Windows
+- Web (JS)
+Para compilar usa el comando flutter build y te apareceran todas las opciones disponibles para compilar
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Si te gusta mi trabajo no dudes en darle una estrella al repositorio!! 😄😄	

@@ -1,6 +1,8 @@
 import 'dart:math';
 
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +42,9 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController forthChar = TextEditingController();
   TextEditingController fifthtChar = TextEditingController();
   String currentWord = "";
+  List<Widget> notCorrectWords = [];
+  ConfettiController controllerConfetti =
+      ConfettiController(duration: const Duration(seconds: 2));
   List<String> valores = [
     "salir",
     "tener",
@@ -1046,13 +1051,47 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    controllerConfetti =
+        ConfettiController(duration: const Duration(seconds: 2));
     asignNewWord();
   }
 
   void checkWord(String word) {
-    word.split("").asMap().forEach((i, value) {
-      debugPrint(value + " " + i.toString());
-    });
+    String winningMessage = "Has adivinado la palabra! (" + currentWord + ")";
+    String notWinningMessage =
+        "Que poco! La palabra que buscabas era " + currentWord + "";
+    if (word == currentWord || notCorrectWords.length > 4) {
+      if (word == currentWord) {
+        showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+                  title: const Text('Enhorabuena'),
+                  content: Text(winningMessage),
+                ));
+        controllerConfetti.play();
+      } else {
+        showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+                  title: const Text('Casi!'),
+                  content: Text(notWinningMessage),
+                ));
+      }
+      restartAttempts();
+      asignNewWord();
+    } else {
+      addAttempt(firstChar.text, secondChar.text, thirdChar.text,
+          forthChar.text, fifthtChar.text);
+    }
+    clearTextFields();
+  }
+
+  clearTextFields() {
+    firstChar.clear();
+    secondChar.clear();
+    thirdChar.clear();
+    forthChar.clear();
+    fifthtChar.clear();
   }
 
   void asignNewWord() {
@@ -1063,17 +1102,82 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Align buildConfettiWidget(controller, double blastDirection) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConfettiWidget(
+        maximumSize: const Size(2, 2),
+        shouldLoop: false,
+        confettiController: controller,
+        blastDirection: blastDirection,
+        blastDirectionality: BlastDirectionality.explosive,
+        maxBlastForce: 10,
+        minBlastForce: 5,
+        emissionFrequency: 1,
+        numberOfParticles: 2,
+        gravity: 0,
+      ),
+    );
+  }
+
   bool notEmpty(
       TextEditingController one,
       TextEditingController two,
       TextEditingController three,
       TextEditingController four,
       TextEditingController five) {
-    return one.text != "" &&
-        two.text != "" &&
-        three.text != "" &&
-        four.text != "" &&
-        five.text != "";
+    return one.text.isNotEmpty &&
+        two.text.isNotEmpty &&
+        three.text.isNotEmpty &&
+        four.text.isNotEmpty &&
+        five.text.isNotEmpty;
+  }
+
+  Widget attempts(String fisrtChar, String secondChar, String thirdChar,
+      String forthChar, String fifthtChar) {
+    return Center(
+        child: Stack(
+      children: [
+        RichText(
+            text: TextSpan(children: <TextSpan>[
+          singleWordPainted(firstChar.text, 0),
+          singleWordPainted(this.secondChar.text, 1),
+          singleWordPainted(this.thirdChar.text, 2),
+          singleWordPainted(this.forthChar.text, 3),
+          singleWordPainted(this.fifthtChar.text, 4),
+        ]))
+      ],
+    ));
+  }
+
+  TextSpan singleWordPainted(String char, int index) {
+    //Returns every single char printed depending if its on the word, its in the correct position or is not in the word
+    Color color;
+    if (currentWord.split("").asMap()[index] == char) {
+      color = Colors.green;
+    } else if (currentWord.contains(char)) {
+      color = Colors.orange;
+    } else {
+      color = Colors.red;
+    }
+    return TextSpan(
+        text: char,
+        style: TextStyle(
+            color: Colors.black, backgroundColor: color, fontSize: 30));
+  }
+
+  void addAttempt(String fisrtChar, String secondChar, String thirdChar,
+      String forthChar, String fifthtChar) {
+    setState(() {
+      notCorrectWords.add(
+          attempts(fisrtChar, secondChar, thirdChar, forthChar, fifthtChar));
+    });
+  }
+
+  void restartAttempts() {
+    setState(() {
+      notCorrectWords.clear();
+    });
   }
 
   @override
@@ -1083,93 +1187,130 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Container(
-                      child: TextField(
-                        maxLength: 1,
-                        textInputAction: TextInputAction.next,
-                        controller: firstChar,
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          buildConfettiWidget(controllerConfetti, pi),
+          buildConfettiWidget(controllerConfetti, pi / 4),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: notCorrectWords.length,
+                  itemBuilder: (context, index) {
+                    return notCorrectWords[index];
+                  }),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        child: TextField(
+                          inputFormatters: [
+                            // only accept letters from a to z
+                            FilteringTextInputFormatter(RegExp(r'[a-z]'),
+                                allow: true)
+                          ],
+                          maxLength: 1,
+                          textInputAction: TextInputAction.next,
+                          controller: firstChar,
+                        ),
+                        width: 30,
                       ),
-                      width: 30,
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Container(
-                      child: TextField(
-                        maxLength: 1,
-                        textInputAction: TextInputAction.next,
-                        controller: secondChar,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        child: TextField(
+                          inputFormatters: [
+                            // only accept letters from a to z
+                            FilteringTextInputFormatter(RegExp(r'[a-z]'),
+                                allow: true)
+                          ],
+                          maxLength: 1,
+                          textInputAction: TextInputAction.next,
+                          controller: secondChar,
+                        ),
+                        width: 30,
                       ),
-                      width: 30,
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Container(
-                      child: TextField(
-                        maxLength: 1,
-                        textInputAction: TextInputAction.next,
-                        controller: thirdChar,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        child: TextField(
+                          inputFormatters: [
+                            // only accept letters from a to z
+                            FilteringTextInputFormatter(RegExp(r'[a-z]'),
+                                allow: true)
+                          ],
+                          maxLength: 1,
+                          textInputAction: TextInputAction.next,
+                          controller: thirdChar,
+                        ),
+                        width: 30,
                       ),
-                      width: 30,
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Container(
-                      child: TextField(
-                        maxLength: 1,
-                        textInputAction: TextInputAction.next,
-                        controller: forthChar,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        child: TextField(
+                          inputFormatters: [
+                            // only accept letters from a to z
+                            FilteringTextInputFormatter(RegExp(r'[a-z]'),
+                                allow: true)
+                          ],
+                          maxLength: 1,
+                          textInputAction: TextInputAction.next,
+                          controller: forthChar,
+                        ),
+                        width: 30,
                       ),
-                      width: 30,
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Container(
-                      child: TextField(
-                        maxLength: 1,
-                        controller: fifthtChar,
-                        onSubmitted: (value) {
-                          if (notEmpty(firstChar, secondChar, thirdChar,
-                              forthChar, fifthtChar)) {
-                            String formedWord = firstChar.text +
-                                secondChar.text +
-                                thirdChar.text +
-                                forthChar.text +
-                                fifthtChar.text;
-                            checkWord(formedWord);
-                          } else {
-                            showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                      title: Text('Error'),
-                                      content: Text('Faltan letras por poner'),
-                                    ));
-                          }
-                        },
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        child: TextField(
+                          inputFormatters: [
+                            // only accept letters from a to z
+                            FilteringTextInputFormatter(RegExp(r'[a-z]'),
+                                allow: true)
+                          ],
+                          maxLength: 1,
+                          controller: fifthtChar,
+                          onSubmitted: (value) {
+                            if (notEmpty(firstChar, secondChar, thirdChar,
+                                forthChar, fifthtChar)) {
+                              String formedWord = firstChar.text +
+                                  secondChar.text +
+                                  thirdChar.text +
+                                  forthChar.text +
+                                  fifthtChar.text;
+                              checkWord(formedWord);
+                            } else {
+                              showDialog(
+                                  context: context,
+                                  builder: (_) => const AlertDialog(
+                                        title: Text('Error'),
+                                        content:
+                                            Text('Faltan letras por poner'),
+                                      ));
+                            }
+                          },
+                        ),
+                        width: 30,
                       ),
-                      width: 30,
                     ),
-                  ),
-                  Text(currentWord)
-                ],
-              ),
-            )
-          ],
-        ),
-      ),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ],
+      )),
     );
   }
 }
